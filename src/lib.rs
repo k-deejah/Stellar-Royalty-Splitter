@@ -244,6 +244,9 @@ impl RoyaltySplitter {
     ///
     /// # Authorization
     /// Requires admin signature
+    ///
+    /// # Panics
+    /// * `"recipients list cannot be empty"` — no collaborators are configured
     pub fn distribute(env: Env, token: Address) {
         env.storage().instance().extend_ttl(MIN_TTL, MAX_TTL);
 
@@ -259,6 +262,16 @@ impl RoyaltySplitter {
             panic!("contract is paused");
         }
 
+        let collaborators: Vec<Address> = env
+            .storage()
+            .instance()
+            .get(&DataKey::Collaborators)
+            .expect("no collaborators");
+
+        if collaborators.is_empty() {
+            panic!("recipients list cannot be empty");
+        }
+
         if Self::get_total_shares(env.clone()) != 10_000 {
             panic!("total shares must sum to 10000");
         }
@@ -268,12 +281,6 @@ impl RoyaltySplitter {
         if amount == 0 {
             panic!("no balance to distribute");
         }
-
-        let collaborators: Vec<Address> = env
-            .storage()
-            .instance()
-            .get(&DataKey::Collaborators)
-            .expect("no collaborators");
 
         let share_map: Map<Address, u32> = env
             .storage()
